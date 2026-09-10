@@ -5,8 +5,6 @@
 #import "../Shared/LGSharedSupport.h"
 #import <objc/runtime.h>
 
-#pragma mark - taxonomy
-
 static CGFloat sCCSmallModuleRadius = 0.0;
 
 static UIView *ccModuleAncestor(UIView *v) {
@@ -44,7 +42,7 @@ static BOOL ccIsInsideSlider(UIView *mat) {
 }
 
 static BOOL ccHasSBElasticHierarchy(UIView *view) {
-    // volume hud reuses cc views so leave its elastic hierarchy alone
+
     UIView *candidate = view;
     for (NSInteger level = 0; candidate && level < 3; level++, candidate = candidate.superview) {
         NSString *className = NSStringFromClass(candidate.class);
@@ -103,8 +101,6 @@ static CGFloat ccGlassRadiusForMaterial(UIView *mat) {
     if (h > 100.0 && w < 100.0) return w * 0.5;
     return ccPillRadius(mat);
 }
-
-#pragma mark - fullscreen backdrop styling
 
 static void *kCCFullscreenBlurCapKey = &kCCFullscreenBlurCapKey;
 static void *kCCFullscreenDimViewKey = &kCCFullscreenDimViewKey;
@@ -197,7 +193,7 @@ static BOOL ccObjectHasBlurCap(id object) {
 }
 
 static void ccClampBlurFilter(id filter, CGFloat radius) {
-    // blur radius keys changed names across ios releases
+
     if (!filter) return;
     ccSetBlurCapMarker(filter, YES);
     for (NSString *key in @[@"inputRadius", @"radius", @"inputBlurRadius", @"blurRadius"]) {
@@ -242,7 +238,7 @@ static void ccSetBlurCapOnLayerTree(CALayer *layer, BOOL enabled, CGFloat radius
 }
 
 static void ccClampBlurAnimation(CAAnimation *animation, CGFloat radius) {
-    // stock transitions can restore blur after the model value is clamped
+
     if (!animation) return;
 
     if ([animation isKindOfClass:CAAnimationGroup.class]) {
@@ -354,8 +350,6 @@ static UIView *ccFullscreenDimView(UIView *backdropMaterial, BOOL create) {
     }
     return dimView;
 }
-
-#pragma mark - fullscreen backdrop diagnostics
 
 static void ccApplyFullscreenBackdropStyle(UIView *overlayRoot) {
     if (!overlayRoot) return;
@@ -547,8 +541,6 @@ static void ccScheduleFullscreenBackdropStyle(UIView *overlayRoot) {
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.08 * NSEC_PER_SEC)),
                    dispatch_get_main_queue(), ^{ ccApplyFullscreenBackdropStyle(weakRoot); });
 }
-
-#pragma mark - round-only fills
 
 static void *kCCRoundOriginalRadiusKey = &kCCRoundOriginalRadiusKey;
 static void *kCCRoundOriginalCurveKey = &kCCRoundOriginalCurveKey;
@@ -747,7 +739,7 @@ static void ccRefreshContentContainerGlass(UIView *container) {
     }
 }
 
-#pragma mark - hooks
+%group LGControlCenterHooks
 
 %hook CCUIContentModuleContainerView
 - (void)layoutSubviews { %orig; roundModuleContainer((UIView *)self); }
@@ -907,7 +899,11 @@ static void ccRefreshContentContainerGlass(UIView *container) {
 
 %end
 
+%end
+
 %ctor {
+    if (!LGIsSpringBoardProcess()) return;
+    %init(LGControlCenterHooks);
     lgObservePreferenceReload(^{
         if (!lgHostEnabled(@"ControlCenter")) ccRestoreAllRoundedViews();
         for (UIView *root in ccOverlayRoots().allObjects) {

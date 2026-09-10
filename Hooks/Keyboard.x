@@ -261,7 +261,6 @@ static BOOL LGKeyboardIsDirectKeyplaneAtlas(UIView *view) {
 static void LGKeyboardNormalizeKeyplaneAtlasFrames(UIView *keyplane) {
     if (!keyplane || !LGKeyboardNeedsTopReserve()) return;
 
-    // moving keyplane bounds must not move its baked image atlas twice
     CGFloat keyplaneBoundsY = keyplane.bounds.origin.y;
     if (fabs(keyplaneBoundsY) < 0.01) return;
 
@@ -328,7 +327,6 @@ static void LGKeyboardKeyplaneLayoutSubviews(id object, SEL selector) {
 static void LGKeyboardInstallKeyplaneHooks(UIView *keyplane) {
     if (!keyplane) return;
 
-    // keyplane classes vary so hook each concrete class once
     Class keyplaneClass = object_getClass(keyplane);
     NSString *className = NSStringFromClass(keyplaneClass);
     if (!keyplaneClass || !className.length ||
@@ -619,6 +617,8 @@ static void LGUpdateKeyboardVisualEffect(UIView *effectView) {
                                     lgHostEnabled(@"Keyboard") ? YES : requestedHidden);
 }
 
+%group LGKeyboardHooks
+
 %hook UIKBBackdropView
 
 - (void)didMoveToWindow {
@@ -835,7 +835,11 @@ static void LGUpdateKeyboardVisualEffect(UIView *effectView) {
 
 %end
 
+%end
+
 %ctor {
+    if (LGIsExcludedSystemProcess()) return;
+    %init(LGKeyboardHooks);
     gLGKeyboardBackdrops = [NSHashTable weakObjectsHashTable];
     gLGKeyboardVisualEffects = [NSHashTable weakObjectsHashTable];
     gLGKeyboardHookedKeyplaneClasses = [NSMutableSet set];
